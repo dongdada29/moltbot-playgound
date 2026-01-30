@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>扫雷游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .controls label {
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .controls select,
+        .controls input {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .controls select option {
+            background: #1a1a2e;
+        }
+
+        button {
+            padding: 10px 24px;
+            border-radius: 8px;
+            border: none;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            color: #fff;
+            font-size: 16px;
+        }
+
+        .board {
+            display: grid;
+            gap: 2px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .cell {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cell.hidden {
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+        }
+
+        .cell.hidden:hover {
+            background: linear-gradient(135deg, #5a6578 0%, #3d4758 100%);
+        }
+
+        .cell.revealed {
+            background: rgba(255, 255, 255, 0.1);
+            cursor: default;
+        }
+
+        .cell.mine {
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+        }
+
+        .cell.flagged {
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+        }
+
+        .cell[data-number="1"] { color: #3182ce; }
+        .cell[data-number="2"] { color: #38a169; }
+        .cell[data-number="3"] { color: #e53e3e; }
+        .cell[data-number="4"] { color: #805ad5; }
+        .cell[data-number="5"] { color: #dd6b20; }
+        .cell[data-number="6"] { color: #00b5d8; }
+        .cell[data-number="7"] { color: #1a202c; }
+        .cell[data-number="8"] { color: #718096; }
+
+        .message {
+            text-align: center;
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .message.win {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        }
+
+        .message.lose {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+        }
+
+        .instructions {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .instructions h3 {
+            color: #fff;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>💣 扫雷</h1>
+
+        <div class="controls">
+            <label>
+                难度:
+                <select id="difficulty">
+                    <option value="easy">简单 (9x9, 10雷)</option>
+                    <option value="medium">中等 (16x16, 40雷)</option>
+                    <option value="hard">困难 (30x16, 99雷)</option>
+                </select>
+            </label>
+            <button onclick="newGame()">新游戏</button>
+        </div>
+
+        <div class="status-bar">
+            <span>💣 剩余: <span id="mines-left">0</span></span>
+            <span>⏱️ 时间: <span id="timer">0</span>s</span>
+        </div>
+
+        <div class="board" id="board"></div>
+
+        <div class="message" id="message" style="display: none;"></div>
+
+        <div class="instructions">
+            <h3>游戏规则</h3>
+            <p>🖱️ 左键点击揭开方块</p>
+            <p>🚩 右键点击标记地雷</p>
+            <p>🎯 避开所有地雷，揭开所有安全格子即可获胜!</p>
+        </div>
+    </div>
+
+    <script>
+        const difficulties = {
+            easy: { rows: 9, cols: 9, mines: 10 },
+            medium: { rows: 16, cols: 16, mines: 40 },
+            hard: { rows: 16, cols: 30, mines: 99 }
+        };
+
+        let board = [];
+        let revealed = [];
+        let flagged = [];
+        let gameOver = false;
+        let timer = 0;
+        let timerInterval = null;
+        let currentDifficulty = 'easy';
+        let firstClick = true;
+
+        function newGame() {
+            const diff = difficulties[currentDifficulty];
+            const { rows, cols, mines } = diff;
+
+            // 重置状态
+            board = [];
+            revealed = [];
+            flagged = [];
+            gameOver = false;
+            timer = 0;
+            firstClick = true;
+
+            clearInterval(timerInterval);
+            document.getElementById('timer').textContent = '0';
+            document.getElementById('mines-left').textContent = mines;
+            document.getElementById('message').style.display = 'none';
+            document.getElementById('message').className = 'message';
+
+            // 初始化棋盘
+            for (let i = 0; i < rows; i++) {
+                board[i] = [];
+                revealed[i] = [];
+                flagged[i] = [];
+                for (let j = 0; j < cols; j++) {
+                    board[i][j] = 0;
+                    revealed[i][j] = false;
+                    flagged[i][j] = false;
+                }
+            }
+
+            renderBoard();
+        }
+
+        function placeMines(excludeRow, excludeCol) {
+            const diff = difficulties[currentDifficulty];
+            let { rows, cols, mines } = diff;
+
+            let placed = 0;
+            while (placed < mines) {
+                const row = Math.floor(Math.random() * rows);
+                const col = Math.floor(Math.random() * cols);
+
+                // 排除第一次点击周围
+                if (Math.abs(row - excludeRow) <= 1 && Math.abs(col - excludeCol) <= 1) {
+                    continue;
+                }
+
+                if (board[row][col] !== -1) {
+                    board[row][col] = -1;
+                    placed++;
+                }
+            }
+
+            // 计算数字
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    if (board[i][j] === -1) continue;
+                    let count = 0;
+                    for (let di = -1; di <= 1; di++) {
+                        for (let dj = -1; dj <= 1; dj++) {
+                            const ni = i + di;
+                            const nj = j + dj;
+                            if (ni >= 0 && ni < rows && nj >= 0 && nj < cols && board[ni][nj] === -1) {
+                                count++;
+                            }
+                        }
+                    }
+                    board[i][j] = count;
+                }
+            }
+        }
+
+        function renderBoard() {
+            const diff = difficulties[currentDifficulty];
+            const { rows, cols } = diff;
+
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            boardEl.style.gridTemplateColumns = `repeat(${cols}, 30px)`;
+
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    const cell = document.createElement('button');
+                    cell.className = 'cell hidden';
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+
+                    cell.addEventListener('click', () => handleClick(i, j));
+                    cell.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        handleRightClick(i, j);
+                    });
+
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        function handleClick(row, col) {
+            if (gameOver || flagged[row][col] || revealed[row][col]) return;
+
+            if (firstClick) {
+                firstClick = false;
+                placeMines(row, col);
+                startTimer();
+            }
+
+            revealCell(row, col);
+            checkWin();
+        }
+
+        function handleRightClick(row, col) {
+            if (gameOver || revealed[row][col]) return;
+
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            const diff = difficulties[currentDifficulty];
+
+            if (flagged[row][col]) {
+                flagged[row][col] = false;
+                cell.classList.remove('flagged');
+                cell.textContent = '';
+                document.getElementById('mines-left').textContent =
+                    parseInt(document.getElementById('mines-left').textContent) + 1;
+            } else {
+                flagged[row][col] = true;
+                cell.classList.add('flagged');
+                cell.textContent = '🚩';
+                document.getElementById('mines-left').textContent =
+                    parseInt(document.getElementById('mines-left').textContent) - 1;
+            }
+        }
+
+        function revealCell(row, col) {
+            const diff = difficulties[currentDifficulty];
+            const { rows, cols } = diff;
+
+            if (row < 0 || row >= rows || col < 0 || col >= cols) return;
+            if (revealed[row][col] || flagged[row][col]) return;
+
+            revealed[row][col] = true;
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            cell.classList.remove('hidden');
+            cell.classList.add('revealed');
+
+            if (board[row][col] === -1) {
+                // 踩到地雷
+                cell.classList.add('mine');
+                cell.textContent = '💣';
+                endGame(false);
+                return;
+            }
+
+            if (board[row][col] > 0) {
+                cell.textContent = board[row][col];
+                cell.dataset.number = board[row][col];
+            } else {
+                // 空白格子，递归揭开周围
+                for (let di = -1; di <= 1; di++) {
+                    for (let dj = -1; dj <= 1; dj++) {
+                        revealCell(row + di, col + dj);
+                    }
+                }
+            }
+        }
+
+        function checkWin() {
+            if (gameOver) return;
+
+            const diff = difficulties[currentDifficulty];
+            const { rows, cols, mines } = diff;
+
+            let safeRevealed = 0;
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    if (revealed[i][j] && board[i][j] !== -1) {
+                        safeRevealed++;
+                    }
+                }
+            }
+
+            if (safeRevealed === rows * cols - mines) {
+                endGame(true);
+            }
+        }
+
+        function endGame(won) {
+            gameOver = true;
+            clearInterval(timerInterval);
+
+            const message = document.getElementById('message');
+            message.style.display = 'block';
+            message.className = won ? 'message win' : 'message lose';
+            message.textContent = won ? '🎉 恭喜获胜！' : '💥 游戏结束！';
+
+            // 显示所有地雷
+            const diff = difficulties[currentDifficulty];
+            const { rows, cols } = diff;
+
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    if (board[i][j] === -1) {
+                        const cell = document.querySelector(`[data-row="${i}"][data-col="${j}"]`);
+                        if (!cell.classList.contains('mine')) {
+                            cell.classList.add('mine');
+                            cell.textContent = flagged[i][j] ? '🚩' : '💣';
+                        }
+                    }
+                }
+            }
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timer++;
+                document.getElementById('timer').textContent = timer;
+            }, 1000);
+        }
+
+        // 难度选择
+        document.getElementById('difficulty').addEventListener('change', (e) => {
+            currentDifficulty = e.target.value;
+            newGame();
+        });
+
+        // 开始游戏
+        newGame();
+    </script>
+</body>
+</html>
