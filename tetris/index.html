@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>俄罗斯方块</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎮 俄罗斯方块</h1>
+        
+        <div class="game-area">
+            <canvas id="gameCanvas" width="300" height="600"></canvas>
+            
+            <div class="side-panel">
+                <div class="info-box">
+                    <h3>下一个</h3>
+                    <canvas id="nextCanvas" width="120" height="120"></canvas>
+                </div>
+                
+                <div class="info-box">
+                    <h3>分数</h3>
+                    <div id="score">0</div>
+                </div>
+                
+                <div class="info-box">
+                    <h3>等级</h3>
+                    <div id="level">1</div>
+                </div>
+                
+                <div class="info-box">
+                    <h3>行数</h3>
+                    <div id="lines">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls-info">
+            <p>← → 移动 | ↑ 旋转 | ↓ 加速 | P 暂停</p>
+        </div>
+        
+        <button id="startBtn">开始游戏</button>
+    </div>
+    
+    <div id="gameOver" class="modal">
+        <div class="modal-content">
+            <h2>游戏结束！</h2>
+            <p>最终分数: <span id="finalScore">0</span></p>
+            <button onclick="location.reload()">再来一局</button>
+        </div>
+    </div>
+    
+    <div id="pauseModal" class="modal">
+        <div class="modal-content">
+            <h2>暂停中</h2>
+            <p>按 P 继续游戏</p>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
